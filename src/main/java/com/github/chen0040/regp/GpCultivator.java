@@ -9,6 +9,10 @@ import com.github.chen0040.regp.operators.Concat;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import oi.thekraken.grok.api.Grok;
+import oi.thekraken.grok.api.exception.GrokException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,9 +29,13 @@ public class GpCultivator {
    private int displayEvery = -1;
    private int populationSize = 1000;
    private int maxGenerations = 100;
+   private String regex = null;
+   private Solution solution = null;
+   private Grok grok = null;
+   private static final Logger logger = LoggerFactory.getLogger(GpCultivator.class);
 
 
-   public Solution fit(List<String> trainingData) {
+   public Grok fit(List<String> trainingData) {
       treeGP= new TreeGP();
       treeGP.setDisplayEvery(displayEvery);
       treeGP.setPopulationSize(populationSize);
@@ -50,13 +58,28 @@ public class GpCultivator {
       for(int i= 0; i < patternCount; ++i) {
          treeGP.addConstant("%{" + GrokService.getPattern(i) + "}", 1.0);
       }
+      //treeGP.addConstants("#", " ");
 
       List<Observation> observations = new ArrayList<>();
+      GrokObservation first = null;
       for(String data : trainingData) {
          GrokObservation observation = new GrokObservation();
+         if(first == null) {
+            first = observation;
+         }
          observation.setText(data);
          observations.add(observation);
       }
-      return treeGP.fit(observations);
+      solution = treeGP.fit(observations);
+      solution.executeWithText(first);
+      regex = first.getPredictedTextOutput(0);
+      try {
+         grok = GrokService.build(regex);
+      }
+      catch (GrokException e) {
+         logger.error("Failed to build grok from regex " + regex, e);
+      }
+
+      return grok;
    }
 }

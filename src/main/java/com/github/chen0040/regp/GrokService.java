@@ -1,6 +1,7 @@
 package com.github.chen0040.regp;
 
 
+import com.github.chen0040.data.utils.StringUtils;
 import oi.thekraken.grok.api.Grok;
 import oi.thekraken.grok.api.Match;
 import oi.thekraken.grok.api.exception.GrokException;
@@ -9,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 
 
@@ -128,11 +130,9 @@ public class GrokService implements Serializable {
 
       defaultPatterns.put("MESSAGESLOG", "%{SYSLOGBASE} %{DATA}");
 
-      defaultPatterns.put("COMMONAPACHELOG",
-              "%{IPORHOST:clientip} %{USER:ident} %{USER:auth} \\[%{HTTPDATE:timestamp}\\] \"(?:%{WORD:verb} %{NOTSPACE:request}(?: HTTP/%{NUMBER:httpversion})?|%{DATA:rawrequest})\" %{NUMBER:response} (?:%{NUMBER:bytes}|-)");
+      defaultPatterns.put("COMMONAPACHELOG", "%{IPORHOST:clientip} %{USER:ident} %{USER:auth} \\[%{HTTPDATE:timestamp}\\] \"(?:%{WORD:verb} %{NOTSPACE:request}(?: HTTP/%{NUMBER:httpversion})?|%{DATA:rawrequest})\" %{NUMBER:response} (?:%{NUMBER:bytes}|-)");
       defaultPatterns.put("COMBINEDAPACHELOG", "%{COMMONAPACHELOG} %{QS:referrer} %{QS:agent}");
-      defaultPatterns.put("COMMONAPACHELOG_DATATYPED",
-              "%{IPORHOST:clientip} %{USER:ident;boolean} %{USER:auth} \\[%{HTTPDATE:timestamp;date;dd/MMM/yyyy:HH:mm:ss Z}\\] \"(?:%{WORD:verb;string} %{NOTSPACE:request}(?: HTTP/%{NUMBER:httpversion;float})?|%{DATA:rawrequest})\" %{NUMBER:response;int} (?:%{NUMBER:bytes;long}|-)");
+      defaultPatterns.put("COMMONAPACHELOG_DATATYPED", "%{IPORHOST:clientip} %{USER:ident;boolean} %{USER:auth} \\[%{HTTPDATE:timestamp;date;dd/MMM/yyyy:HH:mm:ss Z}\\] \"(?:%{WORD:verb;string} %{NOTSPACE:request}(?: HTTP/%{NUMBER:httpversion;float})?|%{DATA:rawrequest})\" %{NUMBER:response;int} (?:%{NUMBER:bytes;long}|-)");
 
       //Log Levels
       defaultPatterns.put("LOGLEVEL",
@@ -201,18 +201,26 @@ public class GrokService implements Serializable {
       nonEvovablePatterns.add("SECOND");
       nonEvovablePatterns.add("TIME");
 
+
+
+      /*
       nonEvovablePatterns.add("DATE_US");
       nonEvovablePatterns.add("DATE_EU");
+      nonEvovablePatterns.add("DATE");
+      nonEvovablePatterns.add("DATESTAMP");
+
+      */
+
       nonEvovablePatterns.add("ISO8601_TIMEZONE");
       nonEvovablePatterns.add("ISO8601_SECOND");
       nonEvovablePatterns.add("TIMESTAMP_ISO8601");
-      nonEvovablePatterns.add("DATE");
-      nonEvovablePatterns.add("DATESTAMP");
+
       nonEvovablePatterns.add("TZ");
       nonEvovablePatterns.add("DATESTAMP_RFC822");
       nonEvovablePatterns.add("DATESTAMP_RFC2822");
       nonEvovablePatterns.add("DATESTAMP_OTHER");
       nonEvovablePatterns.add("DATESTAMP_EVENTLOG");
+
       nonEvovablePatterns.add("SYSLOGTIMESTAMP");
       nonEvovablePatterns.add("PROG");
       nonEvovablePatterns.add("SYSLOGPROG");
@@ -222,11 +230,11 @@ public class GrokService implements Serializable {
       nonEvovablePatterns.add("QS");
 
       EVOLVABLE_PATTERNS.addAll(defaultPatterns.keySet().stream().filter(p -> !nonEvovablePatterns.contains(p)).collect(Collectors.toList()));
-      EVOLVABLE_PATTERNS.addAll(haproxyPatterns.keySet().stream().collect(Collectors.toList()));
-      EVOLVABLE_PATTERNS.addAll(firewallPatterns.keySet().stream().collect(Collectors.toList()));
-      EVOLVABLE_PATTERNS.addAll(javaPatterns.keySet().stream().collect(Collectors.toList()));
-      EVOLVABLE_PATTERNS.addAll(linuxSyslogPatterns.keySet().stream().collect(Collectors.toList()));
-      EVOLVABLE_PATTERNS.addAll(rubyPatterns.keySet().stream().collect(Collectors.toList()));
+      //EVOLVABLE_PATTERNS.addAll(haproxyPatterns.keySet().stream().collect(Collectors.toList()));
+      //EVOLVABLE_PATTERNS.addAll(firewallPatterns.keySet().stream().collect(Collectors.toList()));
+      //EVOLVABLE_PATTERNS.addAll(javaPatterns.keySet().stream().collect(Collectors.toList()));
+      //EVOLVABLE_PATTERNS.addAll(linuxSyslogPatterns.keySet().stream().collect(Collectors.toList()));
+      //EVOLVABLE_PATTERNS.addAll(rubyPatterns.keySet().stream().collect(Collectors.toList()));
 
    }
 
@@ -263,13 +271,16 @@ public class GrokService implements Serializable {
          Match match = grok.match(text);
          match.captures();
 
-         int matched_count = match.toMap().size();
+         long matched_count = match.toMap().values().stream().map(obj -> obj == null ? "" : obj.toString()).filter(str -> !StringUtils.isEmpty(str)).count();
 
          cost = 1.0 / (1 + matched_count);
 
       }
       catch (GrokException e) {
          logger.error("Failed to evaluate the regex " + regex + " on text " + text, e);
+      }
+      catch(PatternSyntaxException e2) {
+         cost = 1.0;
       }
 
       return cost;
