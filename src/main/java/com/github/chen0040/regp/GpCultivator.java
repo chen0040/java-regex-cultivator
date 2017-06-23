@@ -41,7 +41,7 @@ public class GpCultivator {
 
       List<Observation> observations = new ArrayList<>();
       for(String data : trainingData) {
-         GrokObservation observation = new GrokObservation(patternCount / 2);
+         GrokObservation observation = new GrokObservation();
          observation.setText(data);
          observations.add(observation);
       }

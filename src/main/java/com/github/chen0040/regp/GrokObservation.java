@@ -19,14 +19,9 @@ public class GrokObservation extends BasicObservation {
    private String text;
    private List<Integer> patterns = new ArrayList<>();
 
-   public GrokObservation(int inputCount) {
-      super(inputCount, 1);
+   public GrokObservation() {
+      super(0, 1);
 
-      setOutput(0, 0);
-
-      for(int i=0; i < inputCount; ++i) {
-         setInput(i, i);
-      }
 
 
    }
