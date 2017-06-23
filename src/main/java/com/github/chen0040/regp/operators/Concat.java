@@ -13,10 +13,9 @@ import java.util.List;
  * Created by xschen on 22/6/2017.
  */
 public class Concat extends Operator {
-   public static int SYMBOL = 10000;
 
    public Concat(){
-
+      super(2, "concat");
    }
 
    @Override public Primitive makeCopy() {
@@ -25,15 +24,18 @@ public class Concat extends Operator {
 
 
    @Override public void execute(Observation observation) {
-      GrokObservation go = (GrokObservation) observation;
-      go.append(-1);
-   }
-
-   @Override public void beforeExecute(List<Double> values, Observation observation) {
-      super.beforeExecute(values, observation);
-
-      GrokObservation go = (GrokObservation) observation;
-      go.append(SYMBOL);
 
    }
+
+
+   @Override public void executeWithText(Observation observation) {
+      String regex1 = getTextInput(0);
+      String regex2 = getTextInput(1);
+
+      String output = regex1 + " " + regex2;
+
+      setValue(output);
+   }
+
+
 }

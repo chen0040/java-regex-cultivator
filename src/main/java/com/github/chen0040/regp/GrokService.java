@@ -2,7 +2,10 @@ package com.github.chen0040.regp;
 
 
 import oi.thekraken.grok.api.Grok;
+import oi.thekraken.grok.api.Match;
 import oi.thekraken.grok.api.exception.GrokException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.*;
@@ -12,7 +15,7 @@ import java.util.stream.Collectors;
 /**
  * Created by xschen on 6/12/17.
  */
-public class GrokRepository implements Serializable {
+public class GrokService implements Serializable {
 
    private static final long serialVersionUID = -1373610496881191557L;
    private static Map<String, String> defaultPatterns = new HashMap<>();
@@ -23,6 +26,8 @@ public class GrokRepository implements Serializable {
    private static Map<String, String> rubyPatterns = new HashMap<>();
    private static final List<String> EVOLVABLE_PATTERNS = new ArrayList<>();
    private static Set<String> nonEvovablePatterns = new HashSet<>();
+
+   private static final Logger logger = LoggerFactory.getLogger(GrokService.class);
 
    private String regex = "%{COMBINEDAPACHELOG}";
 
@@ -225,13 +230,8 @@ public class GrokRepository implements Serializable {
 
    }
 
-   private GrokRepository(String regex) {
+   private GrokService(String regex) {
       this.regex = regex;
-   }
-
-
-   public static GrokRepository regex(String regex) {
-      return new GrokRepository(regex);
    }
 
 
@@ -255,6 +255,26 @@ public class GrokRepository implements Serializable {
       return grok;
    }
 
+   public static double evaluate(String regex, String text){
+      double cost = 10000000.0;
+      try {
+         Grok grok = build(regex);
+
+         Match match = grok.match(text);
+         match.captures();
+
+         int matched_count = match.toMap().size();
+
+         cost = 1.0 / (1 + matched_count);
+
+      }
+      catch (GrokException e) {
+         logger.error("Failed to evaluate the regex " + regex + " on text " + text, e);
+      }
+
+      return cost;
+   }
+
 
    public static String getPattern(Integer filterIndex) {
       return EVOLVABLE_PATTERNS.get(filterIndex);
@@ -265,17 +285,6 @@ public class GrokRepository implements Serializable {
       return EVOLVABLE_PATTERNS.size();
    }
 
-
-
-   public static String regex(List<Integer> express) {
-
-      StringBuilder sb = new StringBuilder();
-      for(int i=0; i < express.size(); ++i){
-
-      }
-
-      return sb.toString();
-   }
 
 
 }
